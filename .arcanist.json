@@ -4,7 +4,7 @@
     "runner": "docker",
     "entry": {
       "type": "compose",
-      "files": ["docker-compose.yml"],
+      "files": ["compose.yaml"],
       "service": "linkwarden"
     },
     "url": {
@@ -13,13 +13,13 @@
     },
     "ready": {
       "path": "/",
-      "timeoutSeconds": 240
+      "timeoutSeconds": 900
     },
     "open": {
       "path": "/"
     },
     "e2e": {
-      "testCommand": "curl -fsS http://127.0.0.1:3000/ >/dev/null && docker compose exec -T postgres sh -c 'PGPASSWORD=\"$POSTGRES_PASSWORD\" psql -U postgres -d postgres -c \"SELECT 1;\"'"
+      "testCommand": "curl -fsS http://127.0.0.1:3000/ >/dev/null && docker compose exec -T postgres psql -U postgres -d postgres -c \"SELECT 1;\""
     }
   }
 }
