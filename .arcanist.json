@@ -19,7 +19,7 @@
       "path": "/"
     },
     "e2e": {
-      "testCommand": "curl -fsS http://127.0.0.1:3000/ >/dev/null && docker compose exec -T postgres psql -U postgres -d postgres -c \"SELECT 1;\""
+      "testCommand": "curl -fsS http://127.0.0.1:3000/ >/dev/null && POSTGRES_CONTAINER=$(docker ps --filter name=postgres --filter status=running --format '{{.Names}}' | head -n 1) && test -n \"$POSTGRES_CONTAINER\" && docker exec \"$POSTGRES_CONTAINER\" psql -U postgres -d postgres -c \"SELECT 1;\""
     }
   }
 }
