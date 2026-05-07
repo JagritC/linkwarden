@@ -1,0 +1,25 @@
+{
+  "appRuntime": {
+    "kind": "web",
+    "runner": "docker",
+    "entry": {
+      "type": "compose",
+      "files": ["docker-compose.yml"],
+      "service": "linkwarden"
+    },
+    "url": {
+      "hostPort": 3000,
+      "path": "/"
+    },
+    "ready": {
+      "path": "/",
+      "timeoutSeconds": 600
+    },
+    "open": {
+      "path": "/"
+    },
+    "e2e": {
+      "testCommand": "curl -fsS http://127.0.0.1:3000 >/dev/null"
+    }
+  }
+}
