@@ -3,15 +3,12 @@ import Tree, {
   mutateTree,
   moveItemOnTree,
   RenderItemParams,
-  TreeItem,
   TreeData,
   ItemId,
   TreeSourcePosition,
   TreeDestinationPosition,
 } from "@atlaskit/tree";
-import { Collection } from "@linkwarden/prisma/client";
 import Link from "next/link";
-import { CollectionIncludingMembersAndLinkCount } from "@linkwarden/types/global";
 import { useRouter } from "next/router";
 import toast from "react-hot-toast";
 import { useTranslation } from "next-i18next";
@@ -25,10 +22,10 @@ import { IconWeight } from "@phosphor-icons/react";
 import Droppable from "./Droppable";
 import { cn } from "@linkwarden/lib/utils";
 import { Active, useDndContext } from "@dnd-kit/core";
-
-interface ExtendedTreeItem extends TreeItem {
-  data: Collection;
-}
+import {
+  buildTreeFromCollections,
+  ExtendedTreeItem,
+} from "@/lib/collections/buildTreeFromCollections";
 
 const CollectionListing = () => {
   const { active: droppableActive } = useDndContext();
@@ -387,111 +384,4 @@ const Dropdown = (
   }
   // return <span>&bull;</span>;
   return <div></div>;
-};
-
-const buildTreeFromCollections = (
-  collections: CollectionIncludingMembersAndLinkCount[],
-  router: ReturnType<typeof useRouter>,
-  tree?: TreeData,
-  order?: number[]
-): TreeData => {
-  if (order) {
-    collections.sort((a: any, b: any) => {
-      return order.indexOf(a.id) - order.indexOf(b.id);
-    });
-  }
-
-  function getTotalLinkCount(collectionId: number): number {
-    const collection = items[collectionId];
-    if (!collection) {
-      return 0;
-    }
-
-    let totalLinkCount = (collection.data as any)._count?.links || 0;
-
-    if (collection.hasChildren) {
-      collection.children.forEach((childId) => {
-        totalLinkCount += getTotalLinkCount(childId as number);
-      });
-    }
-
-    return totalLinkCount;
-  }
-
-  const items: { [key: string]: ExtendedTreeItem } = collections.reduce(
-    (acc: any, collection) => {
-      acc[collection.id as number] = {
-        id: collection.id,
-        children: [],
-        hasChildren: false,
-        isExpanded: tree?.items[collection.id as number]?.isExpanded || false,
-        data: {
-          id: collection.id,
-          parentId: collection.parentId,
-          name: collection.name,
-          description: collection.description,
-          color: collection.color,
-          icon: collection.icon,
-          iconWeight: collection.iconWeight,
-          isPublic: collection.isPublic,
-          ownerId: collection.ownerId,
-          createdAt: collection.createdAt,
-          updatedAt: collection.updatedAt,
-          _count: {
-            links: collection._count?.links,
-          },
-        },
-      };
-      return acc;
-    },
-    {}
-  );
-
-  const activeCollectionId = Number(router.asPath.split("/collections/")[1]);
-
-  if (activeCollectionId) {
-    for (const item in items) {
-      const collection = items[item];
-      if (Number(item) === activeCollectionId && collection.data.parentId) {
-        // get all the parents of the active collection recursively until root and set isExpanded to true
-        let parentId = collection.data.parentId || null;
-        while (parentId && items[parentId]) {
-          items[parentId].isExpanded = true;
-          parentId = items[parentId].data.parentId;
-        }
-      }
-    }
-  }
-
-  collections.forEach((collection) => {
-    const parentId = collection.parentId;
-    if (parentId && items[parentId] && collection.id) {
-      items[parentId].children.push(collection.id);
-      items[parentId].hasChildren = true;
-    }
-  });
-
-  collections.forEach((collection) => {
-    const collectionId = collection.id;
-    if (items[collectionId as number] && collection.id) {
-      const linkCount = getTotalLinkCount(collectionId as number);
-      (items[collectionId as number].data as any)._count.links = linkCount;
-    }
-  });
-
-  const rootId = "root";
-  items[rootId] = {
-    id: rootId,
-    children: (collections
-      .filter(
-        (c) =>
-          c.parentId === null || !collections.find((i) => i.id === c.parentId)
-      )
-      .map((c) => c.id) || "") as unknown as string[],
-    hasChildren: true,
-    isExpanded: true,
-    data: { name: "Root" } as Collection,
-  };
-
-  return { rootId, items };
 };
