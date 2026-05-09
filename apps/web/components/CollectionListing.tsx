@@ -389,7 +389,7 @@ const Dropdown = (
   return <div></div>;
 };
 
-const buildTreeFromCollections = (
+export const buildTreeFromCollections = (
   collections: CollectionIncludingMembersAndLinkCount[],
   router: ReturnType<typeof useRouter>,
   tree?: TreeData,
@@ -401,21 +401,28 @@ const buildTreeFromCollections = (
     });
   }
 
-  function getTotalLinkCount(collectionId: number): number {
+  const linkCounts = new Map(
+    collections.map((collection) => [
+      collection.id as number,
+      collection._count?.links || 0,
+    ])
+  );
+
+  function getDirectLinkCount(collectionId: number): number {
     const collection = items[collectionId];
     if (!collection) {
       return 0;
     }
 
-    let totalLinkCount = (collection.data as any)._count?.links || 0;
+    let linkCount = linkCounts.get(collectionId) || 0;
 
     if (collection.hasChildren) {
       collection.children.forEach((childId) => {
-        totalLinkCount += getTotalLinkCount(childId as number);
+        linkCount += linkCounts.get(childId as number) || 0;
       });
     }
 
-    return totalLinkCount;
+    return linkCount;
   }
 
   const items: { [key: string]: ExtendedTreeItem } = collections.reduce(
@@ -474,7 +481,7 @@ const buildTreeFromCollections = (
   collections.forEach((collection) => {
     const collectionId = collection.id;
     if (items[collectionId as number] && collection.id) {
-      const linkCount = getTotalLinkCount(collectionId as number);
+      const linkCount = getDirectLinkCount(collectionId as number);
       (items[collectionId as number].data as any)._count.links = linkCount;
     }
   });
